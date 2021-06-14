@@ -1,29 +1,67 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <script>
-            const socket = new WebSocket("ws://localhost:3000");
-
-            socket.onopen = (ev) => {
-                var div = document.createElement('div');
-                div.innerHTML = `successfully opened connection`;
-                document.body.appendChild(div);
-                socket.send("HELLO U MOFO");
-            }
-
-            socket.onmessage = (ev) => {
-                const data = JSON.parse(ev.data);
-                var div = document.createElement('div');
-                div.innerHTML = `connected as player ${data.player}`
-                document.body.appendChild(div);
-                
-                // document.body.innerHTML += `connected as player ${data.player}`
-            }
-        </script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.3.10/pixi.js" integrity="sha512-9tPO3gqglqiAdSlIxWOBOxl6jTjsFJ2eYwzt/5DZJ3SK1hvhh54bvkKrrCZL3344OyQK+RNf/4sxo+o5WPoVRA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     </head>
     <body>
         <div>
             Alive and well
         </div>
+
+        <div id="game"></div>
     </body>
+
+    <script>
+        let playerData;
+        // Socket stuff
+        const socket = new WebSocket("ws://localhost:3000");
+        socket.onopen = (ev) => {
+            var div = document.createElement('div');
+            div.innerHTML = `successfully opened connection`;
+            document.body.appendChild(div);
+            socket.send("HELLO U MOFO");
+        }
+
+        socket.onmessage = (ev) => {
+            playerData = JSON.parse(ev.data);
+            var div = document.createElement('div');
+            div.innerHTML = `connected as player ${playerData.player}`
+            document.body.appendChild(div);        
+            
+            // TODO: this can only be done after start message
+            playerData.player == 1 ? player.drawRect(120, 360, 20, 20) : player.drawRect(260, 360, 20, 20);
+            application.stage.addChild(player);
+        }
+
+        // Game stuff
+        const application = new PIXI.Application({
+            width: 500,
+            height: 500,
+        });
+
+        const ground = new PIXI.Graphics();
+        ground.beginFill(0xA52A2A);
+        ground.drawRect(100, 400, 300, 50);
+        application.stage.addChild(ground);
+        
+        const player = new PIXI.Graphics();
+        player.beginFill(0xFF0000);
+            
+
+        document.addEventListener("keypress", (ev) => {
+            console.log(ev)
+            switch(ev.key){
+                case("A"):
+                case("a"):
+                    player.x -= 2;
+                    break;
+                case("d"):
+                case("D"):
+                    player.x += 2;
+                    break;
+            }
+        })
+
+        document.getElementById("game").appendChild(application.view);
+    </script>
 </html>
