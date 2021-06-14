@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script>
+            const socket = new WebSocket("ws://localhost:3000");
+
+            socket.onopen = (ev) => {
+                var div = document.createElement('div');
+                div.innerHTML = `successfully opened connection`;
+                document.body.appendChild(div);
+                socket.send("HELLO U MOFO");
+            }
+
+            socket.onmessage = (ev) => {
+                const data = JSON.parse(ev.data);
+                var div = document.createElement('div');
+                div.innerHTML = `connected as player ${data.player}`
+                document.body.appendChild(div);
+                
+                // document.body.innerHTML += `connected as player ${data.player}`
+            }
+        </script>
+    </head>
+    <body>
+        <div>
+            Alive and well
+        </div>
+    </body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "multiplayer_game",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jackhamby/multiplayer_game.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jackhamby/multiplayer_game/issues"
+  },
+  "homepage": "https://github.com/jackhamby/multiplayer_game#readme",
+  "dependencies": {
+    "ws": "^7.4.6"
+  }
+}
