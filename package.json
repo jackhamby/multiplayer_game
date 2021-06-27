@@ -18,6 +18,8 @@
   },
   "homepage": "https://github.com/jackhamby/multiplayer_game#readme",
   "dependencies": {
+    "express": "^4.17.1",
+    "uuid": "^8.3.2",
     "ws": "^7.4.6"
   }
 }

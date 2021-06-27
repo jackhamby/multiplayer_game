@@ -12,25 +12,82 @@
     </body>
 
     <script>
-        let playerData;
-        // Socket stuff
-        const socket = new WebSocket("ws://localhost:3000");
-        socket.onopen = (ev) => {
-            var div = document.createElement('div');
-            div.innerHTML = `successfully opened connection`;
-            document.body.appendChild(div);
-            socket.send("HELLO U MOFO");
+        let playerId;
+        let unitGraphics = {};
+        let gameState;
+
+        // Utils
+        const pasteDom = (str) => {
+            const div = document.createElement("div");
+            div.innerHTML = str;
+            document.getElementById("game").appendChild(div);
         }
 
+        const loadGame = (newGameState) => {
+            gameState = newGameState;
+            Object.keys(gameState).forEach((playerId) => {
+                createPlayer(playerId, newGameState);
+            })
+        }
+
+        const updateGameState = (playerId, x, y) => {
+            gameState[playerId].x = x;
+            gameState[playerId].y = y;
+            redraw(playerId, x, y);
+        }
+
+        const createPlayer = (playerId, newGameState) => {
+            unitGraphics[playerId] = new PIXI.Graphics();
+            unitGraphics[playerId].beginFill(0xFF0000);
+            unitGraphics[playerId].drawRect(newGameState[playerId].x, newGameState[playerId].y, 20, 20);
+            gameState[playerId] = newGameState[playerId]
+            application.stage.addChild(unitGraphics[playerId]);
+        }
+
+        const removePlayer = (playerId) => {
+            console.log(`removing player ${playerId}`)
+
+            unitGraphics[playerId].clear();
+            application.stage.removeChild(unitGraphics[playerId]);
+            delete unitGraphics[playerId];
+            delete gameState[playerId];
+        }
+
+        const redraw = (playerId, x, y) => {
+            unitGraphics[playerId].clear();
+            unitGraphics[playerId].beginFill(0xFF0000);
+            unitGraphics[playerId].drawRect(x, y, 20, 20);  
+        }
+
+        // Socket stuff
+        const socket = new WebSocket("ws://localhost:3005");
+
         socket.onmessage = (ev) => {
-            playerData = JSON.parse(ev.data);
-            var div = document.createElement('div');
-            div.innerHTML = `connected as player ${playerData.player}`
-            document.body.appendChild(div);        
-            
-            // TODO: this can only be done after start message
-            playerData.player == 1 ? player.drawRect(120, 360, 20, 20) : player.drawRect(260, 360, 20, 20);
-            application.stage.addChild(player);
+            const event = JSON.parse(ev.data);
+            switch(event.type){
+                case("CONNECTED"):                    
+                    pasteDom(`user connected ${event.playerId}`);
+                    playerId = event.playerId;
+                    loadGame(event.gameState);
+                    break;
+                case("OPPONENT_CONNECTED"):
+                    pasteDom(`opponent connected ${event.playerId}`);
+                    createPlayer(event.playerId, event.gameState);
+                    break;
+                case("OPPONENT_DISCONNECTED"):
+                    console.log(event)
+                    pasteDom(`opponent disconnected ${event.playerId}`);
+                    removePlayer(event.playerId);
+                    break;
+                case("UPDATE"):
+                    pasteDom(`update ${JSON.stringify(event)}`);
+                    gameState[event.playerId].x = event.x;
+                    gameState[event.playerId].y = event.y;
+                    redraw(event.playerId, event.x, event.y);
+                    break;
+                default:
+                    throw(`unhandled event ${event.type}`);
+            }
         }
 
         // Game stuff
@@ -43,24 +100,69 @@
         ground.beginFill(0xA52A2A);
         ground.drawRect(100, 400, 300, 50);
         application.stage.addChild(ground);
-        
-        const player = new PIXI.Graphics();
-        player.beginFill(0xFF0000);
-            
-
         document.addEventListener("keypress", (ev) => {
-            console.log(ev)
             switch(ev.key){
                 case("A"):
                 case("a"):
-                    player.x -= 2;
-                    break;
-                case("d"):
-                case("D"):
-                    player.x += 2;
+                    const x = gameState[playerId].x - 4;
+                    const y = gameState[playerId].y;
+                    updateGameState(playerId, x, y);
+                    socket.send(JSON.stringify({
+                        type: "UPDATE",
+                        playerId,
+                        x,
+                        y,
+                    }));
                     break;
             }
-        })
+
+            switch(ev.key){
+                case("D"):
+                case("d"):
+                    const x = gameState[playerId].x + 4;
+                    const y = gameState[playerId].y;
+                    updateGameState(playerId, x, y);
+                    socket.send(JSON.stringify({
+                        type: "UPDATE",
+                        playerId,
+                        x,
+                        y,
+                    }));
+                    break;
+            }
+            switch(ev.key){
+                case("W"):
+                case("w"):
+                    const x = gameState[playerId].x;
+                    const y = gameState[playerId].y - 4;
+                    updateGameState(playerId, x, y);
+                    socket.send(JSON.stringify({
+                        type: "UPDATE",
+                        playerId,
+                        x,
+                        y,
+                    }));
+                    break;
+            }
+            switch(ev.key){
+                case("S"):
+                case("s"):
+                    const x = gameState[playerId].x;
+                    const y = gameState[playerId].y + 4;
+                    updateGameState(playerId, x, y);
+                    socket.send(JSON.stringify({
+                        type: "UPDATE",
+                        playerId,
+                        x,
+                        y,
+                    }));
+                    break;
+            }
+        });
+
+        window.addEventListener("beforeunload", (event) => {
+            socket.close(1003);
+        });
 
         document.getElementById("game").appendChild(application.view);
     </script>
