@@ -12,9 +12,29 @@
     </body>
 
     <script>
+        let frames = 0;
         let playerId;
         let unitGraphics = {};
         let gameState;
+        let appWidth = 500;
+        let appHeight = 500;
+        let tileWidth = 50;
+        let tileHeight = 50;
+        let playerWidth = 20;
+        let playerHeight = 20;
+        let keysPressed = {
+            "left": false,
+            "right": false,
+            "up": false,
+            "down": false,
+            "jump": false,
+        }
+        let platforms = [];
+        let groundWidth = 300;
+        let groundHeight = 50;
+        let groundX = 100;
+        let groundY = 400;
+
 
         // Utils
         const pasteDom = (str) => {
@@ -30,23 +50,70 @@
             })
         }
 
+        const collidedY = (playerId, y) => {
+            for (let platform of platforms){
+                if ((gameState[playerId].x + playerWidth) >= platform.x &&
+                    gameState[playerId].x <= platform.x + platform.width &&
+                    (y + playerHeight) >= platform.y &&
+                    y <= platform.y + platform.height){
+                        return platform;
+                    }
+            }
+            return null
+        }
+
+        const collidedX = (playerId, x) => {
+            for (let platform of platforms){
+                if ((x + playerWidth) >= platform.x &&
+                    x <= platform.x + platform.width &&
+                    (gameState[playerId].y + playerHeight) >= platform.y &&
+                    gameState[playerId].y <= platform.y + platform.height){
+                        return platform;
+                    }
+            }
+            return null
+        }
+
         const updateGameState = (playerId, x, y) => {
-            gameState[playerId].x = x;
-            gameState[playerId].y = y;
-            redraw(playerId, x, y);
+            const collidedYPlatform = collidedY(playerId, y);
+            const collidedXPlatform = collidedX(playerId, x);
+
+            if (!collidedXPlatform){
+                gameState[playerId].x = x;
+            } else {
+                // Set to left side
+                if (gameState[playerId].x < collidedXPlatform.x){
+                    gameState[playerId].x = collidedXPlatform.x - playerWidth - 1;
+                // set to right side
+                } else {
+                    gameState[playerId].x = (collidedXPlatform.x + collidedXPlatform.width) + 1
+                }
+            }
+
+            if (!collidedYPlatform){
+                gameState[playerId].y = y;
+            } else {
+                // Set to top of platform
+                if (gameState[playerId].y < collidedYPlatform.y){
+                    gameState[playerId].y = collidedYPlatform.y - playerHeight - 1;
+                // Set to bottom
+                } else {
+                    gameState[playerId].y = (collidedYPlatform.y + collidedYPlatform.height) + 1
+                }
+            }
+            redraw(playerId, gameState[playerId].x, gameState[playerId].y);
         }
 
         const createPlayer = (playerId, newGameState) => {
             unitGraphics[playerId] = new PIXI.Graphics();
             unitGraphics[playerId].beginFill(0xFF0000);
-            unitGraphics[playerId].drawRect(newGameState[playerId].x, newGameState[playerId].y, 20, 20);
+            unitGraphics[playerId].drawRect(newGameState[playerId].x, newGameState[playerId].y, playerWidth, playerHeight);
             gameState[playerId] = newGameState[playerId]
             application.stage.addChild(unitGraphics[playerId]);
         }
 
         const removePlayer = (playerId) => {
             console.log(`removing player ${playerId}`)
-
             unitGraphics[playerId].clear();
             application.stage.removeChild(unitGraphics[playerId]);
             delete unitGraphics[playerId];
@@ -56,11 +123,21 @@
         const redraw = (playerId, x, y) => {
             unitGraphics[playerId].clear();
             unitGraphics[playerId].beginFill(0xFF0000);
-            unitGraphics[playerId].drawRect(x, y, 20, 20);  
+            unitGraphics[playerId].drawRect(x, y, playerWidth, playerHeight);  
+        }
+
+        const gravity = () => {
+            if (gameState[playerId].yVelocity < 16){
+                // if (frames % 15){
+
+                    gameState[playerId].yVelocity += 1;
+                // }
+            }
         }
 
         // Socket stuff
-        const socket = new WebSocket("ws://143.198.233.175:3005");
+        // const socket = new WebSocket("ws://143.198.233.175:3005");
+        const socket = new WebSocket("ws://localhost:3005");
 
         socket.onmessage = (ev) => {
             const event = JSON.parse(ev.data);
@@ -80,7 +157,7 @@
                     removePlayer(event.playerId);
                     break;
                 case("UPDATE"):
-                    pasteDom(`update ${JSON.stringify(event)}`);
+                    // pasteDom(`update ${JSON.stringify(event)}`);
                     gameState[event.playerId].x = event.x;
                     gameState[event.playerId].y = event.y;
                     redraw(event.playerId, event.x, event.y);
@@ -96,69 +173,132 @@
             height: 500,
         });
 
+        // Create platforms
         const ground = new PIXI.Graphics();
         ground.beginFill(0xA52A2A);
         ground.drawRect(100, 400, 300, 50);
-        application.stage.addChild(ground);
+        
+        const groundLump = new PIXI.Graphics();
+        groundLump.beginFill(0xA52A2A);
+        groundLump.drawRect(250, 350, 50, 50);
+
+        platforms.push({
+            x: 100,
+            y: 400,
+            width: 300,
+            height: 50
+        }, {
+            x: 250,
+            y: 350,
+            width: 50,
+            height: 50,
+        });
+
+        // console.log(ground)
+        // const grid = new PIXI.Graphics();
+        // grid.lineStyle(1, 0xFFFFFF)
+        // // grid.moveTo(0, 0);
+        // // grid.lineTo(0, 500)
+        // for(let x = 0; x < appWidth; x += tileWidth){
+        //     grid.moveTo(x, 0);
+        //     grid.lineTo(x, appHeight);
+        // }
+        // for(let y = 0; y < appHeight; y += tileHeight){
+        //     grid.moveTo(0, y);
+        //     grid.lineTo(appWidth, y);
+        // }
+        // application.stage.addChild(grid);
+        
+        application.stage.addChild(ground, groundLump);
+        document.addEventListener("keyup", (ev) => {
+            switch(ev.key){
+                case("A"):
+                case("a"):
+                    keysPressed["left"] = false;
+                    if (!keysPressed["right"]){
+                        gameState[playerId].xVelocity = 0;
+                    }
+                    break;
+                case("D"):
+                case("d"):
+                    keysPressed["right"] = false;
+                    if (!keysPressed["left"]){
+                        gameState[playerId].xVelocity = 0;
+                    }
+                    break;
+                case("W"):
+                case("w"):
+                    keysPressed["up"] = false;
+                    if (!keysPressed["down"]){
+                        gameState[playerId].yVelocity = 0;
+                    }
+                    break;
+                case("S"):
+                case("s"):
+                    keysPressed["down"] = false;
+                    if (!keysPressed["up"]){
+                        gameState[playerId].yVelocity = 0;
+                    }
+                    break;
+                default:
+                    
+                    break;
+  
+            }
+        })
         document.addEventListener("keypress", (ev) => {
             switch(ev.key){
                 case("A"):
                 case("a"):
-                    const x = gameState[playerId].x - 4;
-                    const y = gameState[playerId].y;
-                    updateGameState(playerId, x, y);
-                    socket.send(JSON.stringify({
-                        type: "UPDATE",
-                        playerId,
-                        x,
-                        y,
-                    }));
+                    keysPressed["left"] = true;
+                    gameState[playerId].xVelocity = -2;
                     break;
-            }
-
-            switch(ev.key){
                 case("D"):
                 case("d"):
-                    const x = gameState[playerId].x + 4;
-                    const y = gameState[playerId].y;
-                    updateGameState(playerId, x, y);
-                    socket.send(JSON.stringify({
-                        type: "UPDATE",
-                        playerId,
-                        x,
-                        y,
-                    }));
+                    keysPressed["right"] = true;
+                    gameState[playerId].xVelocity = 2;
                     break;
-            }
-            switch(ev.key){
                 case("W"):
                 case("w"):
-                    const x = gameState[playerId].x;
-                    const y = gameState[playerId].y - 4;
-                    updateGameState(playerId, x, y);
-                    socket.send(JSON.stringify({
-                        type: "UPDATE",
-                        playerId,
-                        x,
-                        y,
-                    }));
+                    keysPressed["up"] = true;
+                    gameState[playerId].yVelocity = -2;
                     break;
-            }
-            switch(ev.key){
                 case("S"):
                 case("s"):
-                    const x = gameState[playerId].x;
-                    const y = gameState[playerId].y + 4;
-                    updateGameState(playerId, x, y);
-                    socket.send(JSON.stringify({
-                        type: "UPDATE",
-                        playerId,
-                        x,
-                        y,
-                    }));
+                    gameState[playerId].yVelocity = 2;
+                    keysPressed["down"] = true;
+                    break;
+                case(" "):
+                    ev.preventDefault();
+                    gameState[playerId].yVelocity =  -16;
+                    keysPressed["jump"] = true;
                     break;
             }
         });
+
+        application.ticker.add((delta) => {
+            frames += 1;
+            if (gameState){
+                gravity();
+
+                // if player is not moving dont send updates 
+                if (gameState[playerId].xVelocity === 0 && gameState[playerId].yVelocity === 0){
+                    return;
+                }
+                // update player based on their velocity
+                updateGameState(playerId, gameState[playerId].x + gameState[playerId].xVelocity, gameState[playerId].y + gameState[playerId].yVelocity)
+
+                // Send update
+                socket.send(JSON.stringify({
+                        type: "UPDATE",
+                        playerId,
+                        x: gameState[playerId].x,
+                        y: gameState[playerId].y,
+                        xVelocity: gameState[playerId].xVelocity,
+                        yVelocity: gameState[playerId].yVelocity,
+                    }));
+            }
+        })
 
         window.addEventListener("beforeunload", (event) => {
             socket.close(1003);

@@ -55,6 +55,8 @@ webSocket.on("connection", (socket, req) => {
     gameState[playerId] = {
         x:  Math.floor(Math.random() * 500),
         y: Math.floor(Math.random() * 500),
+        xVelocity: 0,
+        yVelocity: 0,
     };
 
     // Give the connected player their id
