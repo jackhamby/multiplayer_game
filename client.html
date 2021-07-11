@@ -50,59 +50,59 @@
             })
         }
 
-        const collidedY = (playerId, y) => {
-            for (let platform of platforms){
-                if ((gameState[playerId].x + playerWidth) >= platform.x &&
-                    gameState[playerId].x <= platform.x + platform.width &&
-                    (y + playerHeight) >= platform.y &&
-                    y <= platform.y + platform.height){
-                        return platform;
-                    }
-            }
-            return null
-        }
+        // const collidedY = (playerId, y) => {
+        //     for (let platform of platforms){
+        //         if ((gameState[playerId].x + playerWidth) >= platform.x &&
+        //             gameState[playerId].x <= platform.x + platform.width &&
+        //             (y + playerHeight) >= platform.y &&
+        //             y <= platform.y + platform.height){
+        //                 return platform;
+        //             }
+        //     }
+        //     return null
+        // }
 
-        const collidedX = (playerId, x) => {
-            for (let platform of platforms){
-                if ((x + playerWidth) >= platform.x &&
-                    x <= platform.x + platform.width &&
-                    (gameState[playerId].y + playerHeight) >= platform.y &&
-                    gameState[playerId].y <= platform.y + platform.height){
-                        return platform;
-                    }
-            }
-            return null
-        }
+        // const collidedX = (playerId, x) => {
+        //     for (let platform of platforms){
+        //         if ((x + playerWidth) >= platform.x &&
+        //             x <= platform.x + platform.width &&
+        //             (gameState[playerId].y + playerHeight) >= platform.y &&
+        //             gameState[playerId].y <= platform.y + platform.height){
+        //                 return platform;
+        //             }
+        //     }
+        //     return null
+        // }
 
-        const updateGameState = (playerId, x, y) => {
-            const collidedYPlatform = collidedY(playerId, y);
-            const collidedXPlatform = collidedX(playerId, x);
+        // const updateGameState = (playerId, x, y) => {
+        //     const collidedYPlatform = collidedY(playerId, y);
+        //     const collidedXPlatform = collidedX(playerId, x);
 
-            if (!collidedXPlatform){
-                gameState[playerId].x = x;
-            } else {
-                // Set to left side
-                if (gameState[playerId].x < collidedXPlatform.x){
-                    gameState[playerId].x = collidedXPlatform.x - playerWidth - 1;
-                // set to right side
-                } else {
-                    gameState[playerId].x = (collidedXPlatform.x + collidedXPlatform.width) + 1
-                }
-            }
+        //     if (!collidedXPlatform){
+        //         gameState[playerId].x = x;
+        //     } else {
+        //         // Set to left side
+        //         if (gameState[playerId].x < collidedXPlatform.x){
+        //             gameState[playerId].x = collidedXPlatform.x - playerWidth - 1;
+        //         // set to right side
+        //         } else {
+        //             gameState[playerId].x = (collidedXPlatform.x + collidedXPlatform.width) + 1
+        //         }
+        //     }
 
-            if (!collidedYPlatform){
-                gameState[playerId].y = y;
-            } else {
-                // Set to top of platform
-                if (gameState[playerId].y < collidedYPlatform.y){
-                    gameState[playerId].y = collidedYPlatform.y - playerHeight - 1;
-                // Set to bottom
-                } else {
-                    gameState[playerId].y = (collidedYPlatform.y + collidedYPlatform.height) + 1
-                }
-            }
-            redraw(playerId, gameState[playerId].x, gameState[playerId].y);
-        }
+        //     if (!collidedYPlatform){
+        //         gameState[playerId].y = y;
+        //     } else {
+        //         // Set to top of platform
+        //         if (gameState[playerId].y < collidedYPlatform.y){
+        //             gameState[playerId].y = collidedYPlatform.y - playerHeight - 1;
+        //         // Set to bottom
+        //         } else {
+        //             gameState[playerId].y = (collidedYPlatform.y + collidedYPlatform.height) + 1
+        //         }
+        //     }
+        //     redraw(playerId, gameState[playerId].x, gameState[playerId].y);
+        // }
 
         const createPlayer = (playerId, newGameState) => {
             unitGraphics[playerId] = new PIXI.Graphics();
@@ -126,18 +126,22 @@
             unitGraphics[playerId].drawRect(x, y, playerWidth, playerHeight);  
         }
 
-        const gravity = () => {
-            if (gameState[playerId].yVelocity < 16){
-                // if (frames % 15){
-
-                    gameState[playerId].yVelocity += 1;
-                // }
-            }
+        const redrawAll = () => {
+            // debugger;
+            Object.keys(gameState).forEach((playerId) => {
+                redraw(playerId, gameState[playerId].x, gameState[playerId].y)
+            })
         }
 
+        // const gravity = () => {
+        //     if (gameState[playerId].yVelocity < 16){
+        //             gameState[playerId].yVelocity += 1;
+        //     }
+        // }
+
         // Socket stuff
-        const socket = new WebSocket("ws://143.198.233.175:3005");
-        // const socket = new WebSocket("ws://localhost:3005");
+        // const socket = new WebSocket("ws://143.198.233.175:3005");
+        const socket = new WebSocket("ws://localhost:3005");
 
         socket.onmessage = (ev) => {
             const event = JSON.parse(ev.data);
@@ -158,9 +162,13 @@
                     break;
                 case("UPDATE"):
                     // pasteDom(`update ${JSON.stringify(event)}`);
-                    gameState[event.playerId].x = event.x;
-                    gameState[event.playerId].y = event.y;
-                    redraw(event.playerId, event.x, event.y);
+                    // gameState[event.playerId].x = event.x;
+                    // gameState[event.playerId].y = event.y;
+                    // redraw(event.playerId, event.x, event.y);
+                    break;
+                case("UPDATE2"):
+                    gameState = event.gameState;
+                    redrawAll();
                     break;
                 default:
                     throw(`unhandled event ${event.type}`);
@@ -216,32 +224,49 @@
                 case("a"):
                     keysPressed["left"] = false;
                     if (!keysPressed["right"]){
-                        gameState[playerId].xVelocity = 0;
+                        socket.send(JSON.stringify({
+                            type: "ACTION",
+                            action: "stopMoveLeft",
+                            playerId,
+                        }));
                     }
+         
                     break;
                 case("D"):
                 case("d"):
                     keysPressed["right"] = false;
                     if (!keysPressed["left"]){
-                        gameState[playerId].xVelocity = 0;
+                        socket.send(JSON.stringify({
+                            type: "ACTION",
+                            action: "stopMoveRight",
+                            playerId,
+                        }));
                     }
                     break;
                 case("W"):
                 case("w"):
                     keysPressed["up"] = false;
                     if (!keysPressed["down"]){
-                        gameState[playerId].yVelocity = 0;
+                        socket.send(JSON.stringify({
+                            type: "ACTION",
+                            action: "stopMoveUp",
+                            playerId,
+                        }));
                     }
+                  
                     break;
                 case("S"):
                 case("s"):
                     keysPressed["down"] = false;
                     if (!keysPressed["up"]){
-                        gameState[playerId].yVelocity = 0;
+                        socket.send(JSON.stringify({
+                            type: "ACTION",
+                            action: "stopMoveDown",
+                            playerId,
+                        }));
                     }
                     break;
                 default:
-                    
                     break;
   
             }
@@ -251,54 +276,73 @@
                 case("A"):
                 case("a"):
                     keysPressed["left"] = true;
-                    gameState[playerId].xVelocity = -2;
+                    socket.send(JSON.stringify({
+                        type: "ACTION",
+                        action: "moveLeft",
+                        playerId,
+                    }));
                     break;
                 case("D"):
                 case("d"):
                     keysPressed["right"] = true;
-                    gameState[playerId].xVelocity = 2;
+                    socket.send(JSON.stringify({
+                        type: "ACTION",
+                        action: "moveRight",
+                        playerId,
+                    }));
                     break;
                 case("W"):
                 case("w"):
                     keysPressed["up"] = true;
-                    gameState[playerId].yVelocity = -2;
+                    socket.send(JSON.stringify({
+                        type: "ACTION",
+                        action: "moveUp",
+                        playerId,
+                    }));
                     break;
                 case("S"):
                 case("s"):
-                    gameState[playerId].yVelocity = 2;
                     keysPressed["down"] = true;
+                    socket.send(JSON.stringify({
+                        type: "ACTION",
+                        action: "moveDown",
+                        playerId,
+                    }));
                     break;
                 case(" "):
                     ev.preventDefault();
-                    gameState[playerId].yVelocity =  -16;
-                    keysPressed["jump"] = true;
+                    socket.send(JSON.stringify({
+                        type: "ACTION",
+                        action: "jump",
+                        playerId,
+                    }));
                     break;
             }
         });
 
-        application.ticker.add((delta) => {
-            frames += 1;
-            if (gameState){
-                gravity();
+        // application.ticker.add((delta) => {
+        //     frames += 1;
+        //     if (gameState){
+        //         gravity();
 
-                // if player is not moving dont send updates 
-                if (gameState[playerId].xVelocity === 0 && gameState[playerId].yVelocity === 0){
-                    return;
-                }
-                // update player based on their velocity
-                updateGameState(playerId, gameState[playerId].x + gameState[playerId].xVelocity, gameState[playerId].y + gameState[playerId].yVelocity)
+        //         // if player is not moving dont send updates 
+        //         if (gameState[playerId].xVelocity === 0 && gameState[playerId].yVelocity === 0){
+        //             return;
+        //         }
+        //         // update player based on their velocity
+        //         updateGameState(playerId, gameState[playerId].x + gameState[playerId].xVelocity, gameState[playerId].y + gameState[playerId].yVelocity)
 
-                // Send update
-                socket.send(JSON.stringify({
-                        type: "UPDATE",
-                        playerId,
-                        x: gameState[playerId].x,
-                        y: gameState[playerId].y,
-                        xVelocity: gameState[playerId].xVelocity,
-                        yVelocity: gameState[playerId].yVelocity,
-                    }));
-            }
-        })
+        //         // Send update
+        //         socket.send(JSON.stringify({
+        //                 type: "UPDATE",
+        //                 playerId,
+        //                 x: gameState[playerId].x,
+        //                 y: gameState[playerId].y,
+        //                 xVelocity: gameState[playerId].xVelocity,
+        //                 yVelocity: gameState[playerId].yVelocity,
+        //             }));
+        //     }
+        // })
 
         window.addEventListener("beforeunload", (event) => {
             socket.close(1003);
