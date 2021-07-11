@@ -50,60 +50,6 @@
             })
         }
 
-        // const collidedY = (playerId, y) => {
-        //     for (let platform of platforms){
-        //         if ((gameState[playerId].x + playerWidth) >= platform.x &&
-        //             gameState[playerId].x <= platform.x + platform.width &&
-        //             (y + playerHeight) >= platform.y &&
-        //             y <= platform.y + platform.height){
-        //                 return platform;
-        //             }
-        //     }
-        //     return null
-        // }
-
-        // const collidedX = (playerId, x) => {
-        //     for (let platform of platforms){
-        //         if ((x + playerWidth) >= platform.x &&
-        //             x <= platform.x + platform.width &&
-        //             (gameState[playerId].y + playerHeight) >= platform.y &&
-        //             gameState[playerId].y <= platform.y + platform.height){
-        //                 return platform;
-        //             }
-        //     }
-        //     return null
-        // }
-
-        // const updateGameState = (playerId, x, y) => {
-        //     const collidedYPlatform = collidedY(playerId, y);
-        //     const collidedXPlatform = collidedX(playerId, x);
-
-        //     if (!collidedXPlatform){
-        //         gameState[playerId].x = x;
-        //     } else {
-        //         // Set to left side
-        //         if (gameState[playerId].x < collidedXPlatform.x){
-        //             gameState[playerId].x = collidedXPlatform.x - playerWidth - 1;
-        //         // set to right side
-        //         } else {
-        //             gameState[playerId].x = (collidedXPlatform.x + collidedXPlatform.width) + 1
-        //         }
-        //     }
-
-        //     if (!collidedYPlatform){
-        //         gameState[playerId].y = y;
-        //     } else {
-        //         // Set to top of platform
-        //         if (gameState[playerId].y < collidedYPlatform.y){
-        //             gameState[playerId].y = collidedYPlatform.y - playerHeight - 1;
-        //         // Set to bottom
-        //         } else {
-        //             gameState[playerId].y = (collidedYPlatform.y + collidedYPlatform.height) + 1
-        //         }
-        //     }
-        //     redraw(playerId, gameState[playerId].x, gameState[playerId].y);
-        // }
-
         const createPlayer = (playerId, newGameState) => {
             unitGraphics[playerId] = new PIXI.Graphics();
             unitGraphics[playerId].beginFill(0xFF0000);
@@ -133,12 +79,6 @@
             })
         }
 
-        // const gravity = () => {
-        //     if (gameState[playerId].yVelocity < 16){
-        //             gameState[playerId].yVelocity += 1;
-        //     }
-        // }
-
         // Socket stuff
         // const socket = new WebSocket("ws://143.198.233.175:3005");
         const socket = new WebSocket("ws://localhost:3005");
@@ -161,12 +101,6 @@
                     removePlayer(event.playerId);
                     break;
                 case("UPDATE"):
-                    // pasteDom(`update ${JSON.stringify(event)}`);
-                    // gameState[event.playerId].x = event.x;
-                    // gameState[event.playerId].y = event.y;
-                    // redraw(event.playerId, event.x, event.y);
-                    break;
-                case("UPDATE2"):
                     gameState = event.gameState;
                     redrawAll();
                     break;
@@ -201,21 +135,6 @@
             width: 50,
             height: 50,
         });
-
-        // console.log(ground)
-        // const grid = new PIXI.Graphics();
-        // grid.lineStyle(1, 0xFFFFFF)
-        // // grid.moveTo(0, 0);
-        // // grid.lineTo(0, 500)
-        // for(let x = 0; x < appWidth; x += tileWidth){
-        //     grid.moveTo(x, 0);
-        //     grid.lineTo(x, appHeight);
-        // }
-        // for(let y = 0; y < appHeight; y += tileHeight){
-        //     grid.moveTo(0, y);
-        //     grid.lineTo(appWidth, y);
-        // }
-        // application.stage.addChild(grid);
         
         application.stage.addChild(ground, groundLump);
         document.addEventListener("keyup", (ev) => {
@@ -270,7 +189,8 @@
                     break;
   
             }
-        })
+        });
+
         document.addEventListener("keypress", (ev) => {
             switch(ev.key){
                 case("A"):
@@ -319,30 +239,6 @@
                     break;
             }
         });
-
-        // application.ticker.add((delta) => {
-        //     frames += 1;
-        //     if (gameState){
-        //         gravity();
-
-        //         // if player is not moving dont send updates 
-        //         if (gameState[playerId].xVelocity === 0 && gameState[playerId].yVelocity === 0){
-        //             return;
-        //         }
-        //         // update player based on their velocity
-        //         updateGameState(playerId, gameState[playerId].x + gameState[playerId].xVelocity, gameState[playerId].y + gameState[playerId].yVelocity)
-
-        //         // Send update
-        //         socket.send(JSON.stringify({
-        //                 type: "UPDATE",
-        //                 playerId,
-        //                 x: gameState[playerId].x,
-        //                 y: gameState[playerId].y,
-        //                 xVelocity: gameState[playerId].xVelocity,
-        //                 yVelocity: gameState[playerId].yVelocity,
-        //             }));
-        //     }
-        // })
 
         window.addEventListener("beforeunload", (event) => {
             socket.close(1003);

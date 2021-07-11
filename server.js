@@ -23,6 +23,7 @@ const connections = {
 const gameState = {
     
 }
+
 let playerWidth = 20;
 let playerHeight = 20;
 const platforms = [];
@@ -38,12 +39,10 @@ platforms.push({
     height: 50,
 });
 
-const fps = 60;
-
-const broadcastUpdate2 = () => {
+const broadcastUpdate = () => {
     Object.keys(gameState).forEach((socketId) => {
         connections[socketId].send(JSON.stringify({
-            type: "UPDATE2",
+            type: "UPDATE",
             gameState,
         }));
     });
@@ -59,7 +58,6 @@ const broadcastDisconnect = (playerId) => {
         }));
     });
 }
-
 
 webSocket.on("connection", (socket, req) => {
     const playerId = uuid.v4();
@@ -175,7 +173,6 @@ const updateGameState = (playerId, x, y) => {
             gameState[playerId].y = (collidedYPlatform.y + collidedYPlatform.height) + 1
         }
     }
-    // redraw(playerId, gameState[playerId].x, gameState[playerId].y);
 }
 
 const collidedY = (playerId, y) => {
@@ -209,7 +206,7 @@ const gravity = (playerId) => {
 }
 
 const gameLoop = () => {
-    setTimeout(gameLoop, 1000/60);
+    setTimeout(gameLoop, 1000/10);
     // if player is not moving dont send updates 
     
     Object.keys(gameState).forEach((playerId) => {
@@ -220,7 +217,7 @@ const gameLoop = () => {
         // update player based on their velocity
         updateGameState(playerId, gameState[playerId].x + gameState[playerId].xVelocity, gameState[playerId].y + gameState[playerId].yVelocity)
     });
-    broadcastUpdate2();
+    broadcastUpdate();
 }
 
 
