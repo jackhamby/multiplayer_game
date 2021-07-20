@@ -3,7 +3,7 @@ const uuid = require("uuid");
 
 const express = require('express')
 const app = express()
-const port = 3004
+const port = 3006
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/client.html');
@@ -14,7 +14,7 @@ app.listen(port, () => {
 });
 
 const webSocket = new WebSockets.Server({
-    port: 3005,
+    port: 3007,
 });
 
 const connections = {
@@ -206,9 +206,8 @@ const gravity = (playerId) => {
 }
 
 const gameLoop = () => {
-    setTimeout(gameLoop, 1000/10);
-    // if player is not moving dont send updates 
-    
+    setTimeout(gameLoop, 1000/60);
+
     Object.keys(gameState).forEach((playerId) => {
         gravity(playerId);
         if (gameState[playerId].xVelocity === 0 && gameState[playerId].yVelocity === 0){
@@ -217,8 +216,13 @@ const gameLoop = () => {
         // update player based on their velocity
         updateGameState(playerId, gameState[playerId].x + gameState[playerId].xVelocity, gameState[playerId].y + gameState[playerId].yVelocity)
     });
+}
+
+const serverLoop = () => {
+    setTimeout(serverLoop, 1000/60);
     broadcastUpdate();
 }
 
 
+serverLoop();
 gameLoop();
