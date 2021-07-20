@@ -29,21 +29,6 @@ const gameState = {
     
 }
 
-// let playerWidth = 20;
-// let playerHeight = 20;
-// const platforms = [];
-// platforms.push({
-//     x: 100,
-//     y: 400,
-//     width: 300,
-//     height: 50
-// }, {
-//     x: 250,
-//     y: 350,
-//     width: 50,
-//     height: 50,
-// });
-
 const broadcastUpdate = () => {
     Object.keys(gameState).forEach((socketId) => {
         connections[socketId].send(JSON.stringify({
@@ -73,6 +58,8 @@ webSocket.on("connection", (socket, req) => {
         y: Math.floor(Math.random() * 500),
         xVelocity: 0,
         yVelocity: 0,
+        width: game.playerWidth,
+        height: game.playerHeight,
     };
 
     // Give the connected player their id

@@ -49,7 +49,7 @@
         const createPlayer = (playerId, newGameState) => {
             unitGraphics[playerId] = new PIXI.Graphics();
             unitGraphics[playerId].beginFill(0xFF0000);
-            unitGraphics[playerId].drawRect(newGameState[playerId].x, newGameState[playerId].y, playerWidth, playerHeight);
+            unitGraphics[playerId].drawRect(newGameState[playerId].x, newGameState[playerId].y, newGameState[playerId].width, newGameState[playerId].height);
             gameState[playerId] = newGameState[playerId]
             application.stage.addChild(unitGraphics[playerId]);
         }
@@ -65,7 +65,7 @@
         const redraw = (playerId, x, y) => {
             unitGraphics[playerId].clear();
             unitGraphics[playerId].beginFill(0xFF0000);
-            unitGraphics[playerId].drawRect(x, y, playerWidth, playerHeight);  
+            unitGraphics[playerId].drawRect(x, y, gameState[playerId].width, gameState[playerId].height);  
         }
 
         const redrawAll = () => {
