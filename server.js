@@ -1,20 +1,25 @@
 const WebSockets = require("ws");
 const uuid = require("uuid");
+const game = require("./game");
 
 const express = require('express')
 const app = express()
-const port = 3006
+const port = 3004
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/client.html');
 });
   
+app.get('/game.js', (req, res) => {
+    res.sendFile(__dirname + '/game.js');
+});
+
 app.listen(port, () => {
     console.log(`game app listening at http://localhost:${port}`)
 });
 
 const webSocket = new WebSockets.Server({
-    port: 3007,
+    port: 3005,
 });
 
 const connections = {
@@ -24,20 +29,20 @@ const gameState = {
     
 }
 
-let playerWidth = 20;
-let playerHeight = 20;
-const platforms = [];
-platforms.push({
-    x: 100,
-    y: 400,
-    width: 300,
-    height: 50
-}, {
-    x: 250,
-    y: 350,
-    width: 50,
-    height: 50,
-});
+// let playerWidth = 20;
+// let playerHeight = 20;
+// const platforms = [];
+// platforms.push({
+//     x: 100,
+//     y: 400,
+//     width: 300,
+//     height: 50
+// }, {
+//     x: 250,
+//     y: 350,
+//     width: 50,
+//     height: 50,
+// });
 
 const broadcastUpdate = () => {
     Object.keys(gameState).forEach((socketId) => {
@@ -145,76 +150,16 @@ webSocket.on("connection", (socket, req) => {
     console.log(`received a connection, there are ${Object.keys(connections).length} connections`);
 });
 
-
-const updateGameState = (playerId, x, y) => {
-    const collidedYPlatform = collidedY(playerId, y);
-    const collidedXPlatform = collidedX(playerId, x);
-
-    if (!collidedXPlatform){
-        gameState[playerId].x = x;
-    } else {
-        // Set to left side
-        if (gameState[playerId].x < collidedXPlatform.x){
-            gameState[playerId].x = collidedXPlatform.x - playerWidth - 1;
-        // set to right side
-        } else {
-            gameState[playerId].x = (collidedXPlatform.x + collidedXPlatform.width) + 1
-        }
-    }
-
-    if (!collidedYPlatform){
-        gameState[playerId].y = y;
-    } else {
-        // Set to top of platform
-        if (gameState[playerId].y < collidedYPlatform.y){
-            gameState[playerId].y = collidedYPlatform.y - playerHeight - 1;
-        // Set to bottom
-        } else {
-            gameState[playerId].y = (collidedYPlatform.y + collidedYPlatform.height) + 1
-        }
-    }
-}
-
-const collidedY = (playerId, y) => {
-    for (let platform of platforms){
-        if ((gameState[playerId].x + playerWidth) >= platform.x &&
-            gameState[playerId].x <= platform.x + platform.width &&
-            (y + playerHeight) >= platform.y &&
-            y <= platform.y + platform.height){
-                return platform;
-            }
-    }
-    return null
-}
-
-const collidedX = (playerId, x) => {
-    for (let platform of platforms){
-        if ((x + playerWidth) >= platform.x &&
-            x <= platform.x + platform.width &&
-            (gameState[playerId].y + playerHeight) >= platform.y &&
-            gameState[playerId].y <= platform.y + platform.height){
-                return platform;
-            }
-    }
-    return null
-}
-
-const gravity = (playerId) => {
-    if (gameState[playerId].yVelocity < 16){
-            gameState[playerId].yVelocity += 1;
-    }
-}
-
 const gameLoop = () => {
     setTimeout(gameLoop, 1000/60);
 
     Object.keys(gameState).forEach((playerId) => {
-        gravity(playerId);
+        game.gravity(gameState, playerId);
         if (gameState[playerId].xVelocity === 0 && gameState[playerId].yVelocity === 0){
             return;
         }
         // update player based on their velocity
-        updateGameState(playerId, gameState[playerId].x + gameState[playerId].xVelocity, gameState[playerId].y + gameState[playerId].yVelocity)
+        game.updateGameState(gameState, playerId, gameState[playerId].x + gameState[playerId].xVelocity, gameState[playerId].y + gameState[playerId].yVelocity)
     });
 }
 

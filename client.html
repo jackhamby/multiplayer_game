@@ -2,6 +2,7 @@
 <html>
     <head>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.3.10/pixi.js" integrity="sha512-9tPO3gqglqiAdSlIxWOBOxl6jTjsFJ2eYwzt/5DZJ3SK1hvhh54bvkKrrCZL3344OyQK+RNf/4sxo+o5WPoVRA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script src="game.js"></script>
     </head>
     <body>
         <div>
@@ -21,8 +22,8 @@
         let appHeight = 500;
         let tileWidth = 50;
         let tileHeight = 50;
-        let playerWidth = 20;
-        let playerHeight = 20;
+        // let playerWidth = 20;
+        // let playerHeight = 20;
         let keysPressed = {
             "left": false,
             "right": false,
@@ -30,86 +31,6 @@
             "down": false,
             "jump": false,
         }
-        // let platforms = [];
-        let groundWidth = 300;
-        let groundHeight = 50;
-        let groundX = 100;
-        let groundY = 400;
-        const platforms = [];
-        platforms.push({
-            x: 100,
-            y: 400,
-            width: 300,
-            height: 50
-        }, {
-            x: 250,
-            y: 350,
-            width: 50,
-            height: 50,
-        });
-
-        const collidedY = (playerId, y) => {
-            for (let platform of platforms){
-                if ((gameState[playerId].x + playerWidth) >= platform.x &&
-                    gameState[playerId].x <= platform.x + platform.width &&
-                    (y + playerHeight) >= platform.y &&
-                    y <= platform.y + platform.height){
-                        return platform;
-                    }
-            }
-            return null
-        }
-
-        const collidedX = (playerId, x) => {
-            for (let platform of platforms){
-                if ((x + playerWidth) >= platform.x &&
-                    x <= platform.x + platform.width &&
-                    (gameState[playerId].y + playerHeight) >= platform.y &&
-                    gameState[playerId].y <= platform.y + platform.height){
-                        return platform;
-                    }
-            }
-            return null
-        }
-
-        const updateGameState = (playerId, x, y) => {
-            const collidedYPlatform = collidedY(playerId, y);
-            const collidedXPlatform = collidedX(playerId, x);
-
-            if (!collidedXPlatform){
-                gameState[playerId].x = x;
-            } else {
-                // Set to left side
-                if (gameState[playerId].x < collidedXPlatform.x){
-                    gameState[playerId].x = collidedXPlatform.x - playerWidth - 1;
-                // set to right side
-                } else {
-                    gameState[playerId].x = (collidedXPlatform.x + collidedXPlatform.width) + 1
-                }
-            }
-
-            if (!collidedYPlatform){
-                gameState[playerId].y = y;
-            } else {
-                // Set to top of platform
-                if (gameState[playerId].y < collidedYPlatform.y){
-                    gameState[playerId].y = collidedYPlatform.y - playerHeight - 1;
-                // Set to bottom
-                } else {
-                    gameState[playerId].y = (collidedYPlatform.y + collidedYPlatform.height) + 1
-                }
-            }
-        }
-
-        const gravity = () => {
-            if (gameState[playerId].yVelocity < 16){
-                // if (frames % 15){
-
-                    gameState[playerId].yVelocity += 1;
-                // }
-            }
-        }
-
 
         // Utils
         const pasteDom = (str) => {
@@ -174,9 +95,9 @@
 
         // Socket stuff
         // const socket = new WebSocket("ws://143.198.233.175:3005");
-        const socket = new WebSocket("ws://143.198.233.175:3007");
+        // const socket = new WebSocket("ws://143.198.233.175:3007");
 
-        // const socket = new WebSocket("ws://localhost:3005");
+        const socket = new WebSocket("ws://localhost:3005");
 
         socket.onmessage = (ev) => {
             const event = JSON.parse(ev.data);
@@ -336,22 +257,15 @@
             }
         });
 
-        // application.ticker.add((delta) => {
-        //     // console.log('game loop');
-        //     if (!gameState) return;
-        //     redraw(playerId, gameState[playerId].x + gameState[playerId].xVelocity, gameState[playerId].y + gameState[playerId].yVelocity);
-        // })
-
-        // application.ticker.maxFPS = ;
         application.ticker.add((delta) => {
             frames += 1;
             if (gameState){
-                gravity();
                 Object.keys(gameState).forEach((playerId) => {
+                    gravity(gameState, playerId);
                     if (gameState[playerId].xVelocity === 0 && gameState[playerId].yVelocity === 0){
                                 return;
                     }
-                    updateGameState(playerId, gameState[playerId].x + gameState[playerId].xVelocity, gameState[playerId].y + gameState[playerId].yVelocity);
+                    updateGameState(gameState, playerId, gameState[playerId].x + gameState[playerId].xVelocity, gameState[playerId].y + gameState[playerId].yVelocity);
                     redraw(playerId, gameState[playerId].x, gameState[playerId].y);
                 });
        
