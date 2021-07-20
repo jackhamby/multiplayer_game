@@ -4,7 +4,7 @@ const game = require("./game");
 
 const express = require('express')
 const app = express()
-const port = 3004
+const port = 3006
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/client.html');
@@ -19,7 +19,7 @@ app.listen(port, () => {
 });
 
 const webSocket = new WebSockets.Server({
-    port: 3005,
+    port: 3007,
 });
 
 const connections = {
