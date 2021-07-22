@@ -1,119 +1,114 @@
-const playerWidth = 20;
-const playerHeight = 20;
-const platforms = [
-    {
-        x: 100,
-        y: 400,
-        width: 300,
-        height: 50
-    }, 
-    {
-        x: 250,
-        y: 350,
-        width: 50,
-        height: 50,
-    }
-];
-
-const updateGameState = (gameState, playerId, x, y) => {
+const updatePlayerPosition = (gameState, playerId) => {
     if (!gameState) return;
+    const player = gameState.players[playerId];
+    gravity(player);
+    const x = player.x + player.xVelocity;
+    const y = player.y + player.yVelocity;
     const collidedXEntity = collidedX(gameState, playerId, x);
     const collidedYEntity = collidedY(gameState, playerId, y);
 
     if (!collidedXEntity){
-        gameState[playerId].x = x;
+        player.x = x;
     } else {
         // Set to left side
-        if (gameState[playerId].x < collidedXEntity.x){
-            gameState[playerId].x = collidedXEntity.x - playerWidth - 1;
+        if (player.x < collidedXEntity.x){
+            player.x = collidedXEntity.x - player.width - 1;
         // set to right side
         } else {
-            gameState[playerId].x = (collidedXEntity.x + collidedXEntity.width) + 1
+            player.x = (collidedXEntity.x + collidedXEntity.width) + 1
         }
     }
 
     if (!collidedYEntity){
-        gameState[playerId].y = y;
+        gameState.players[playerId].y = y;
     } else {
         // Set to top of platform
-        if (gameState[playerId].y < collidedYEntity.y){
-            gameState[playerId].y = collidedYEntity.y - playerHeight - 1;
+        if (player.y < collidedYEntity.y){
+            player.y = collidedYEntity.y - player.height - 1;
         // Set to bottom
         } else {
-            gameState[playerId].y = (collidedYEntity.y + collidedYEntity.height) + 1
+            player.y = (collidedYEntity.y + collidedYEntity.height) + 1
         }
     }
 }
 
-const gravity = (gameState, playerId) => {
-    if (gameState[playerId].yVelocity < 16){
-            gameState[playerId].yVelocity += 1;
+const updateProjectilePosition = (gameState, projectileId) => {
+    const projectile = gameState.projectiles[projectileId];
+    gravity(projectile);
+
+    // TODO add collision
+    projectile.x += projectile.xVelocity;
+    projectile.y += projectile.yVelocity;
+}
+
+const gravity = (entity) => {
+    if (entity.yVelocity < 16){
+        entity.yVelocity += 1;
     }
 }
 
 const collidedY = (gameState, playerId, y) => {
-    for (let platform of platforms){
-        if ((gameState[playerId].x + gameState[playerId].width) >= platform.x &&
-            gameState[playerId].x <= platform.x + platform.width &&
-            (y + gameState[playerId].height) >= platform.y &&
-            y <= platform.y + platform.height){
-                return platform;
-            }
-    }
     let collider = null;
-    Object.keys(gameState).forEach((enemyPlayerId) => {
-        if (enemyPlayerId === playerId) return;
-        if ((gameState[playerId].x + gameState[playerId].width) >= gameState[enemyPlayerId].x &&
-            gameState[playerId].x <= gameState[enemyPlayerId].x + gameState[enemyPlayerId].width &&
-            (y + gameState[playerId].height) >= gameState[enemyPlayerId].y &&
-            y <= gameState[enemyPlayerId].y + gameState[enemyPlayerId].height){
-                console.log('collided x!')
 
-                collider = gameState[enemyPlayerId];
-            }
+    Object.keys(gameState.platforms).forEach((platformId) => {
+        const platform = gameState.platforms[platformId];
+        const player = gameState.players[playerId];
+        if ((player.x + player.width) >= platform.x &&
+            player.x <= platform.x + platform.width &&
+            (y + player.height) >= platform.y &&
+            y <= platform.y + platform.height){
+            collider =  platform;
+        }
+    });
+  
+    Object.keys(gameState.players).forEach((enemyPlayerId) => {
+        if (enemyPlayerId === playerId) return;
+        const enemyPlayer = gameState.players[enemyPlayerId];
+        const player = gameState.players[playerId];
+        if ((player.x + player.width) >= enemyPlayer.x &&
+            player.x <= enemyPlayer.x + enemyPlayer.width &&
+            (y + player.height) >= enemyPlayer.y &&
+            y <= enemyPlayer.y + enemyPlayer.height){
+            collider = enemyPlayer;
+        }
     });
 
     return collider
 }
 
 const collidedX = (gameState, playerId, x) => {
-    for (let platform of platforms){
-        if ((x + gameState[playerId].width) >= platform.x &&
-            x <= platform.x + platform.width &&
-            (gameState[playerId].y + gameState[playerId].height) >= platform.y &&
-            gameState[playerId].y <= platform.y + platform.height){
-                return platform;
-            }
-    }
-
     let collider = null;
-    Object.keys(gameState).forEach((enemyPlayerId) => {
+    Object.keys(gameState.platforms).forEach((platformId) => {
+        const platform = gameState.platforms[platformId];  
+        const player = gameState.players[playerId];
+        if ((x + player.width) >= platform.x &&
+            x <= platform.x + platform.width &&
+            (player.y + player.height) >= platform.y &&
+            player.y <= platform.y + platform.height){
+                collider = platform;
+        }
+    });
+
+    Object.keys(gameState.players).forEach((enemyPlayerId) => {
         if (enemyPlayerId === playerId) return;
-        if ((x + gameState[playerId].width) >= gameState[enemyPlayerId].x &&
-            x <= gameState[enemyPlayerId].x + gameState[enemyPlayerId].width &&
-            (gameState[playerId].y + gameState[playerId].height) >= gameState[enemyPlayerId].y &&
-            gameState[playerId].y <= gameState[enemyPlayerId].y + gameState[enemyPlayerId].height){
-                console.log('collided y!')
-            collider = gameState[enemyPlayerId];
+        const enemyPlayer = gameState.players[enemyPlayerId];
+        const player = gameState.players[playerId];
+        if ((x + player.width) >= enemyPlayer.x &&
+            x <= enemyPlayer.x + enemyPlayer.width &&
+            (player.y + player.height) >= enemyPlayer.y &&
+            player.y <= enemyPlayer.y + enemyPlayer.height){
+                collider = enemyPlayer;
         }
     });
 
     return collider
 }
 
-// This is a hack so we can import in both
-// server and client.
-if (typeof module !== "undefined" && module.exports) {
-    module.exports = {
-        // constants
-        playerWidth,
-        playerHeight,
-        platforms,
-    
-        // functions
-        updateGameState,
-        gravity,
-    }
+module.exports = {
+    updatePlayerPosition,
+    updateProjectilePosition,
+    gravity,
 }
+
 
 

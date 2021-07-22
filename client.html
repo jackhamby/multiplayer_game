@@ -2,7 +2,6 @@
 <html>
     <head>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.3.10/pixi.js" integrity="sha512-9tPO3gqglqiAdSlIxWOBOxl6jTjsFJ2eYwzt/5DZJ3SK1hvhh54bvkKrrCZL3344OyQK+RNf/4sxo+o5WPoVRA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-        <script src="game.js"></script>
     </head>
     <body>
         <div>
@@ -16,14 +15,16 @@
         let requestCount = 0;
         let frames = 0;
         let playerId;
-        let unitGraphics = {};
+        let graphics = {
+            players: {},
+            projectiles: {},
+            platforms: {}
+        }
         let gameState;
         let appWidth = 500;
         let appHeight = 500;
         let tileWidth = 50;
         let tileHeight = 50;
-        // let playerWidth = 20;
-        // let playerHeight = 20;
         let keysPressed = {
             "left": false,
             "right": false,
@@ -32,6 +33,7 @@
             "jump": false,
         }
 
+
         // Utils
         const pasteDom = (str) => {
             const div = document.createElement("div");
@@ -39,65 +41,76 @@
             document.getElementById("game").appendChild(div);
         }
 
-        const loadGame = (newGameState) => {
-            gameState = newGameState;
-            Object.keys(gameState).forEach((playerId) => {
-                createPlayer(playerId, newGameState);
+        const loadGame = () => {
+            Object.keys(gameState.players).forEach((playerId) => {
+                createPlayer(playerId);
+            })
+
+            Object.keys(gameState.platforms).forEach((platformId) => {
+                createPlatform(platformId);
             })
         }
 
-        const createPlayer = (playerId, newGameState) => {
-            unitGraphics[playerId] = new PIXI.Graphics();
-            unitGraphics[playerId].beginFill(0xFF0000);
-            unitGraphics[playerId].drawRect(newGameState[playerId].x, newGameState[playerId].y, newGameState[playerId].width, newGameState[playerId].height);
-            gameState[playerId] = newGameState[playerId]
-            application.stage.addChild(unitGraphics[playerId]);
+        const createProjectile = (projectileId) => {
+            const projectile = gameState.projectiles[projectileId];
+            graphics.projectiles[projectileId] = new PIXI.Graphics();
+            graphics.projectiles[projectileId].beginFill(0xA52A2A);
+            graphics.projectiles[projectileId].drawRect(projectile.x, projectile.y, projectile.width, projectile.height);
+            application.stage.addChild(graphics.projectiles[projectileId]);
+        }
+
+        const createPlatform = (platformId) => {
+            const platform = gameState.platforms[platformId];
+            graphics.platforms[platformId] = new PIXI.Graphics();
+            graphics.platforms[platformId].beginFill(0xA52A2A);
+            graphics.platforms[platformId].drawRect(platform.x, platform.y, platform.width, platform.height);
+            application.stage.addChild(graphics.platforms[platformId]);
+        }
+
+        const createPlayer = (playerId) => {
+            const player = gameState.players[playerId];
+            graphics.players[playerId] = new PIXI.Graphics();
+            graphics.players[playerId].beginFill(0xFF0000);
+            graphics.players[playerId].drawRect(player.x, player.y, player.width, player.height);
+            application.stage.addChild(graphics.players[playerId]);
         }
 
         const removePlayer = (playerId) => {
             console.log(`removing player ${playerId}`)
-            unitGraphics[playerId].clear();
-            application.stage.removeChild(unitGraphics[playerId]);
-            delete unitGraphics[playerId];
-            delete gameState[playerId];
+            graphics.players[playerId].clear();
+            application.stage.removeChild(graphics.players[playerId]);
+            delete graphics.players[playerId];
         }
 
-        const redraw = (playerId, x, y) => {
-            unitGraphics[playerId].clear();
-            unitGraphics[playerId].beginFill(0xFF0000);
-            unitGraphics[playerId].drawRect(x, y, gameState[playerId].width, gameState[playerId].height);  
+        const redrawPlayer = (playerId) => {
+            graphics.players[playerId].clear();
+            graphics.players[playerId].beginFill(0xFF0000);
+            graphics.players[playerId].drawRect(gameState.players[playerId].x, gameState.players[playerId].y, gameState.players[playerId].width, gameState.players[playerId].height);  
+        }
+
+        const redrawProjectile = (projectileId) => {
+            if (!graphics.projectiles[projectileId]) return;  // There is a race condition with the projectile fired event
+            graphics.projectiles[projectileId].clear();
+            graphics.projectiles[projectileId].beginFill(0xFF0000);
+            graphics.projectiles[projectileId].drawRect(gameState.projectiles[projectileId].x, gameState.projectiles[projectileId].y, gameState.projectiles[projectileId].width, gameState.projectiles[projectileId].height);  
         }
 
         const redrawAll = () => {
             // debugger;
-            Object.keys(gameState).forEach((playerId) => {
-                redraw(playerId, gameState[playerId].x, gameState[playerId].y)
+            Object.keys(gameState.players).forEach((playerId) => {
+                redrawPlayer(playerId)
             });
-        }
 
-        // const tempUpdate = (newGameState) => {
-        //     Object.keys(newGameState).forEach((playerId) => {
-        //         gameState[playerId].xVelocity = newGameState[playerId].xVelocity;
-        //         gameState[playerId].yVelocity = newGameState[playerId].yVelocity;
-        //         const xDiff = Math.abs(newGameState[playerId].x - gameState[playerId].x);
-        //         const yDiff = Math.abs(newGameState[playerId].y - gameState[playerId].y);
-        //         console.log(`player ${playerId}: xDiff ${xDiff} and yDiff ${yDiff}`)
-        //         // If server and client are 10 or pixels out of sync
-        //         // take what the server has
-        //         if (xDiff >= 5){
-        //             gameState[playerId].x = newGameState[playerId].x;
-        //         }
-        //         if (yDiff >= 5){
-        //             gameState[playerId].y = newGameState[playerId].y;
-        //         }
-        //     });
-        // }
+            Object.keys(gameState.projectiles).forEach((projectileId) => {
+                redrawProjectile(projectileId)
+            })
+        }
 
         // Socket stuff
         // const socket = new WebSocket("ws://143.198.233.175:3005");
-        const socket = new WebSocket("ws://143.198.233.175:3007");
+        // const socket = new WebSocket("ws://143.198.233.175:3007");
 
-        // const socket = new WebSocket("ws://localhost:3005");
+        const socket = new WebSocket("ws://localhost:3005");
 
         socket.onmessage = (ev) => {
             const event = JSON.parse(ev.data);
@@ -105,21 +118,25 @@
                 case("CONNECTED"):                    
                     pasteDom(`user connected ${event.playerId}`);
                     playerId = event.playerId;
+                    gameState = event.gameState;
                     loadGame(event.gameState);
                     break;
                 case("OPPONENT_CONNECTED"):
                     pasteDom(`opponent connected ${event.playerId}`);
-                    createPlayer(event.playerId, event.gameState);
+                    gameState = event.gameState;
+                    createPlayer(event.playerId);
                     break;
                 case("OPPONENT_DISCONNECTED"):
                     pasteDom(`opponent disconnected ${event.playerId}`);
+                    gameState = event.gameState;
                     removePlayer(event.playerId);
                     break;
                 case("UPDATE"):
                     gameState = event.gameState;
-                    // tempUpdate(event.gameState);
-                    // redrawAll();
-                    // tempUpdate(event.gameState)
+                    break;
+                case("PROJECTILE_FIRED"):
+                    gameState = event.gameState;
+                    createProjectile(event.projectileId);
                     break;
                 default:
                     throw(`unhandled event ${event.type}`);
@@ -132,28 +149,17 @@
             height: 500,
         });
 
-        // Create platforms
-        const ground = new PIXI.Graphics();
-        ground.beginFill(0xA52A2A);
-        ground.drawRect(100, 400, 300, 50);
-        
-        const groundLump = new PIXI.Graphics();
-        groundLump.beginFill(0xA52A2A);
-        groundLump.drawRect(250, 350, 50, 50);
+        document.addEventListener("keydown", (ev) => {
+            switch(ev.key){
+                case("ArrowLeft"):
+                    socket.send(JSON.stringify({
+                        type: "ACTION",
+                        action: "fireLeft",
+                    }));
+                    break;
+            }
+        })
 
-        platforms.push({
-            x: 100,
-            y: 400,
-            width: 300,
-            height: 50
-        }, {
-            x: 250,
-            y: 350,
-            width: 50,
-            height: 50,
-        });
-        
-        application.stage.addChild(ground, groundLump);
         document.addEventListener("keyup", (ev) => {
             switch(ev.key){
                 case("A"):
@@ -163,7 +169,6 @@
                         socket.send(JSON.stringify({
                             type: "ACTION",
                             action: "stopMoveLeft",
-                            playerId,
                         }));
                     }
          
@@ -175,7 +180,6 @@
                         socket.send(JSON.stringify({
                             type: "ACTION",
                             action: "stopMoveRight",
-                            playerId,
                         }));
                     }
                     break;
@@ -186,7 +190,6 @@
                         socket.send(JSON.stringify({
                             type: "ACTION",
                             action: "stopMoveUp",
-                            playerId,
                         }));
                     }
                   
@@ -198,7 +201,6 @@
                         socket.send(JSON.stringify({
                             type: "ACTION",
                             action: "stopMoveDown",
-                            playerId,
                         }));
                     }
                     break;
@@ -216,7 +218,6 @@
                     socket.send(JSON.stringify({
                         type: "ACTION",
                         action: "moveLeft",
-                        playerId,
                     }));
                     break;
                 case("D"):
@@ -225,7 +226,6 @@
                     socket.send(JSON.stringify({
                         type: "ACTION",
                         action: "moveRight",
-                        playerId,
                     }));
                     break;
                 case("W"):
@@ -234,7 +234,6 @@
                     socket.send(JSON.stringify({
                         type: "ACTION",
                         action: "moveUp",
-                        playerId,
                     }));
                     break;
                 case("S"):
@@ -243,7 +242,6 @@
                     socket.send(JSON.stringify({
                         type: "ACTION",
                         action: "moveDown",
-                        playerId,
                     }));
                     break;
                 case(" "):
@@ -251,7 +249,6 @@
                     socket.send(JSON.stringify({
                         type: "ACTION",
                         action: "jump",
-                        playerId,
                     }));
                     break;
             }
@@ -260,14 +257,10 @@
         application.ticker.add((delta) => {
             frames += 1;
             if (gameState){
-                Object.keys(gameState).forEach((playerId) => {
-                    gravity(gameState, playerId);
-                    if (gameState[playerId].xVelocity === 0 && gameState[playerId].yVelocity === 0){
-                                return;
-                    }
-                    updateGameState(gameState, playerId, gameState[playerId].x + gameState[playerId].xVelocity, gameState[playerId].y + gameState[playerId].yVelocity);
-                    redraw(playerId, gameState[playerId].x, gameState[playerId].y);
-                });
+                redrawAll();
+                // Object.keys(gameState.players).forEach((playerId) => {
+                //     redraw(playerId, gameState.players[playerId].x, gameState.players[playerId].y);
+                // });
        
             }
         })
