@@ -1,7 +1,14 @@
-const updatePlayerPosition = (gameState, playerId) => {
+const updatePlayerPosition = (gameState, playerId, frames) => {
     if (!gameState) return;
     const player = gameState.players[playerId];
-    gravity(player);
+
+    // Apply gravity
+    // if (frames % 5 === 0){
+        if (player.yVelocity < 32){
+            player.yVelocity += 1;
+        }
+    // }
+    // gravity(player);
     const x = player.x + player.xVelocity;
     const y = player.y + player.yVelocity;
     const collidedXEntity = collidedX(gameState, playerId, x);
@@ -32,19 +39,84 @@ const updatePlayerPosition = (gameState, playerId) => {
     }
 }
 
-const updateProjectilePosition = (gameState, projectileId) => {
+const updateProjectilePosition = (gameState, projectileId, frames) => {
     const projectile = gameState.projectiles[projectileId];
-    gravity(projectile);
+    // gravity(projectile);
+    // Apply gravity every 10 frames
+    if (frames % 3 === 0){
+        if (projectile.yVelocity < 32){
+            projectile.yVelocity += 1;
+        }
+    }
+    const x = projectile.x + projectile.xVelocity;
+    const y = projectile.y + projectile.yVelocity;
+    const collidedXEntity = collidedXProjectile(gameState, projectileId, x);
+    const collidedYEntity = collidedYProjectile(gameState, projectileId, y);
+
+    if (!collidedXEntity){
+        projectile.x = x;
+    } else {
+        // Set to left side
+        if (projectile.x < collidedXEntity.x){
+            projectile.x = collidedXEntity.x - projectile.width - 1;
+        // set to right side
+        } else {
+            projectile.x = (collidedXEntity.x + collidedXEntity.width) + 1
+        }
+    }
+
+    if (!collidedYEntity){
+        projectile.y = y;
+    } else {
+        // Set to top of platform
+        if (projectile.y < collidedYEntity.y){
+            projectile.y = collidedYEntity.y - projectile.height - 1;
+        // Set to bottom
+        } else {
+            projectile.y = (collidedYEntity.y + collidedYEntity.height) + 1
+        }
+    }
 
     // TODO add collision
-    projectile.x += projectile.xVelocity;
-    projectile.y += projectile.yVelocity;
+    // projectile.x += projectile.xVelocity;
+    // projectile.y += projectile.yVelocity;
 }
 
-const gravity = (entity) => {
-    if (entity.yVelocity < 16){
-        entity.yVelocity += 1;
-    }
+// const gravity = (entity) => {
+
+// }
+
+const collidedYProjectile = (gameState, projectileId, y) => {
+    let collider = null;
+
+    Object.keys(gameState.platforms).forEach((platformId) => {
+        const platform = gameState.platforms[platformId];
+        const projectile = gameState.projectiles[projectileId];
+        if ((projectile.x + projectile.width) >= platform.x &&
+            projectile.x <= platform.x + platform.width &&
+            (y + projectile.height) >= platform.y &&
+            y <= platform.y + platform.height){
+            collider =  platform;
+        }
+    });
+
+    return collider
+}
+
+const collidedXProjectile = (gameState, projectileId, x) => {
+    let collider = null;
+    Object.keys(gameState.platforms).forEach((platformId) => {
+        const platform = gameState.platforms[platformId];  
+        const projectile = gameState.projectiles[projectileId];
+        if ((x + projectile.width) >= platform.x &&
+            x <= platform.x + platform.width &&
+            (projectile.y + projectile.height) >= platform.y &&
+            projectile.y <= platform.y + platform.height){
+                collider = platform;
+        }
+    });
+    return collider;
+
 }
 
 const collidedY = (gameState, playerId, y) => {
@@ -107,7 +179,7 @@ const collidedX = (gameState, playerId, x) => {
 module.exports = {
     updatePlayerPosition,
     updateProjectilePosition,
-    gravity,
+    // gravity,
 }
 
 

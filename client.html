@@ -59,6 +59,10 @@
             application.stage.addChild(graphics.projectiles[projectileId]);
         }
 
+        const destroyProjectile = (projectileId) => {
+            application.stage.removeChild(graphics.projectiles[projectileId]);
+        }
+
         const createPlatform = (platformId) => {
             const platform = gameState.platforms[platformId];
             graphics.platforms[platformId] = new PIXI.Graphics();
@@ -79,7 +83,6 @@
             console.log(`removing player ${playerId}`)
             graphics.players[playerId].clear();
             application.stage.removeChild(graphics.players[playerId]);
-            delete graphics.players[playerId];
         }
 
         const redrawPlayer = (playerId) => {
@@ -107,10 +110,10 @@
         }
 
         // Socket stuff
-        // const socket = new WebSocket("ws://143.198.233.175:3005");
+        const socket = new WebSocket("ws://143.198.233.175:3005");
         // const socket = new WebSocket("ws://143.198.233.175:3007");
 
-        const socket = new WebSocket("ws://localhost:3005");
+        // const socket = new WebSocket("ws://localhost:3005");
 
         socket.onmessage = (ev) => {
             const event = JSON.parse(ev.data);
@@ -138,6 +141,10 @@
                     gameState = event.gameState;
                     createProjectile(event.projectileId);
                     break;
+                case("PROJECTILE_DESTROYED"):
+                    gameState = event.gameState;
+                    destroyProjectile(event.projectileId);
+                    break;
                 default:
                     throw(`unhandled event ${event.type}`);
             }
@@ -155,6 +162,25 @@
                     socket.send(JSON.stringify({
                         type: "ACTION",
                         action: "fireLeft",
+                    }));
+                    break;
+                case("ArrowRight"):
+                    socket.send(JSON.stringify({
+                        type: "ACTION",
+                        action: "fireRight",
+                    }));
+                    break;
+                case("ArrowUp"):
+                    socket.send(JSON.stringify({
+                        type: "ACTION",
+                        action: "fireUp",
+                    }));
+                    break;
+
+                case("ArrowDown"):
+                    socket.send(JSON.stringify({
+                        type: "ACTION",
+                        action: "fireDown",
                     }));
                     break;
             }
@@ -256,6 +282,7 @@
 
         application.ticker.add((delta) => {
             frames += 1;
+            // console.log(gameState);
             if (gameState){
                 redrawAll();
                 // Object.keys(gameState.players).forEach((playerId) => {

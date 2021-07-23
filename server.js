@@ -75,9 +75,35 @@ const broadCastProjectileFire = (projectileId) => {
     }); 
 }
 
+const broadCastProjectileDestroy = (projectileId) => {
+    Object.keys(connections).forEach((socketId) => {
+        connections[socketId].send(JSON.stringify({
+            type: "PROJECTILE_DESTROYED",
+            projectileId,
+            gameState,
+        }));
+    }); 
+}
+
+const createProjectile = (playerId, xVelocity, yVelocity) => {
+    const projectileId = uuid.v4();
+    const player = gameState.players[playerId];
+    const projectile  = {
+        lifeTime: 300, // default lifetime in frames
+        x: player.x,
+        y: player.y,
+        xVelocity,
+        yVelocity,
+        width: 5, // default width and height
+        height: 5,
+        playerId,
+    }
+    gameState.projectiles[projectileId] = projectile;
+    broadCastProjectileFire(projectileId);
+}
+
 webSocket.on("connection", (socket, req) => {
     const playerId = uuid.v4();
-
     connections[playerId] = socket;
     gameState.players[playerId] = {
         x:  Math.floor(Math.random() * 500),
@@ -154,19 +180,22 @@ webSocket.on("connection", (socket, req) => {
                         break;
                     case("fireLeft"):
                         console.log('recieved fire left')
-                        const projectileId = uuid.v4();
-                        const player = gameState.players[playerId];
-                        const projectile  = {
-                            x: player.x,
-                            y: player.y,
-                            xVelocity: -2,
-                            yVelocity: 0,
-                            width: 5, // default width and height
-                            height: 5,
-                            playerId,
-                        }
-                        gameState.projectiles[projectileId] = projectile;
-                        broadCastProjectileFire(projectileId);
+                        createProjectile(playerId, -16, 0)
+                        // Create projectile
+                        break;
+                    case("fireRight"):
+                        console.log('recieved fire right')
+                        createProjectile(playerId, 16, 0)
+                        // Create projectile
+                        break;
+                    case("fireUp"):
+                        console.log('recieved fire up')
+                        createProjectile(playerId, 0, -16)
+                        // Create projectile
+                        break;
+                    case("fireDown"):
+                        console.log('recieved fire down')
+                        createProjectile(playerId, 0, 16)
                         // Create projectile
                         break;
                     default:
@@ -180,18 +209,28 @@ webSocket.on("connection", (socket, req) => {
     console.log(`received a connection, there are ${Object.keys(connections).length} connections`);
 });
 
+let frames = 0
 const gameLoop = () => {
+    if (frames === Number.MAX_SAFE_INTEGER) frames = 0;
+
     setTimeout(gameLoop, 1000/60);
 
     Object.keys(gameState.players).forEach((playerId) => {
-        game.gravity(gameState, playerId);
-        game.updatePlayerPosition(gameState, playerId)
+        // game.gravity(gameState, playerId);
+        game.updatePlayerPosition(gameState, playerId, frames)
     });
 
     Object.keys(gameState.projectiles).forEach((projectileId) => {
-        game.updateProjectilePosition(gameState, projectileId)
+        game.updateProjectilePosition(gameState, projectileId, frames);
+        const projectile = gameState.projectiles[projectileId];
+        projectile.lifeTime -= 1;
+        if (projectile.lifeTime <= 0){
+            delete gameState.projectiles[projectileId];
+            broadCastProjectileDestroy(projectileId);
+        }
+    });
 
-    })
+    ++frames;
 }
 
 const serverLoop = () => {
