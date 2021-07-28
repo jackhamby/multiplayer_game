@@ -85,8 +85,21 @@ const broadCastProjectileDestroy = (projectileId) => {
     }); 
 }
 
+
+const createPlatform = (x, y, width, height) => {
+    const id = uuid.v4();
+    const platform = {
+        x,
+        y,
+        width,
+        height,
+        id,
+    }
+    gameState.projectiles[id] = platform;
+}
+
 const createProjectile = (playerId, xVelocity, yVelocity) => {
-    const projectileId = uuid.v4();
+    const id = uuid.v4();
     const player = gameState.players[playerId];
     const projectile  = {
         lifeTime: 300, // default lifetime in frames
@@ -97,9 +110,10 @@ const createProjectile = (playerId, xVelocity, yVelocity) => {
         width: 5, // default width and height
         height: 5,
         playerId,
+        id,
     }
-    gameState.projectiles[projectileId] = projectile;
-    broadCastProjectileFire(projectileId);
+    gameState.projectiles[id] = projectile;
+    broadCastProjectileFire(id);
 }
 
 webSocket.on("connection", (socket, req) => {
@@ -112,6 +126,7 @@ webSocket.on("connection", (socket, req) => {
         yVelocity: 0,
         width: 20, // default width and height
         height: 30,
+        id: playerId,
     };
 
     // Give the connected player their id
@@ -238,6 +253,8 @@ const serverLoop = () => {
     broadcastUpdate();
 }
 
+createPlatform(100, 400, 300, 50);
+createPlatform(250, 350, 50, 50);
 
 serverLoop();
 gameLoop();
