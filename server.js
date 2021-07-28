@@ -31,18 +31,25 @@ const gameState = {
     projectiles: {}
 }
 
-gameState.platforms[uuid.v4()] = {
-    x: 100,
-    y: 400,
-    width: 300,
-    height: 50
-}
-gameState.platforms[uuid.v4()] = {
-    x: 250,
-    y: 350,
-    width: 50,
-    height: 50,
-}
+// const platform1 = createPlatform(100, 400, 300, 50);
+// const platform2 = createPlatform(250, 250, 50, 50);
+
+// gameState.platforms[platform1.platformId] = platform1;
+// gameState.platforms[platform2.platformId] = platform2;
+
+// gameState.platforms[uuid.v4()] = {
+//     x: 100,
+//     y: 400,
+//     width: 300,
+//     height: 50,
+//     platformId: id1,
+// }
+// gameState.platforms[uuid.v4()] = {
+//     x: 250,
+//     y: 350,
+//     width: 50,
+//     height: 50,
+// }
 
 const broadcastUpdate = () => {
     Object.keys(connections).forEach((socketId) => {
@@ -85,8 +92,22 @@ const broadCastProjectileDestroy = (projectileId) => {
     }); 
 }
 
+
+
+const createPlatform = (x, y, width, height) => {
+    const id = uuid.v4();
+    const platform = {
+        x,
+        y,
+        width,
+        height,
+        id,
+    }
+    gameState.projectiles[id] = platform;
+}
+
 const createProjectile = (playerId, xVelocity, yVelocity) => {
-    const projectileId = uuid.v4();
+    const id = uuid.v4();
     const player = gameState.players[playerId];
     const projectile  = {
         lifeTime: 300, // default lifetime in frames
@@ -97,9 +118,10 @@ const createProjectile = (playerId, xVelocity, yVelocity) => {
         width: 5, // default width and height
         height: 5,
         playerId,
+        id,
     }
-    gameState.projectiles[projectileId] = projectile;
-    broadCastProjectileFire(projectileId);
+    gameState.projectiles[id] = projectile;
+    broadCastProjectileFire(id);
 }
 
 webSocket.on("connection", (socket, req) => {
@@ -112,6 +134,7 @@ webSocket.on("connection", (socket, req) => {
         yVelocity: 0,
         width: 20, // default width and height
         height: 30,
+        id: playerId,
     };
 
     // Give the connected player their id
@@ -234,9 +257,26 @@ const gameLoop = () => {
 }
 
 const serverLoop = () => {
-    setTimeout(serverLoop, 1000/60);
+    setTimeout(serverLoop, 1000/40);
     broadcastUpdate();
 }
+
+gameState.platforms[uuid.v4()] = {
+    x: 100,
+    y: 400,
+    width: 300,
+    height: 50
+}
+gameState.platforms[uuid.v4()] = {
+    x: 250,
+    y: 350,
+    width: 50,
+    height: 50,
+}
+
+// Any game init
+createPlatform(100, 400, 300, 50);
+createPlatform(250, 350, 50, 50);
 
 
 serverLoop();
