@@ -5,10 +5,8 @@
     </head>
     <body>
         <div>
-            Alive and well
+            <div style="text-align: center;" id="game"></div>
         </div>
-
-        <div id="game"></div>
     </body>
 
     <script>
@@ -21,8 +19,8 @@
             platforms: {}
         }
         let gameState;
-        let appWidth = 500;
-        let appHeight = 500;
+        let appWidth = 750
+        let appHeight = 750
         let tileWidth = 50;
         let tileHeight = 50;
         let keysPressed = {
@@ -73,22 +71,46 @@
 
         const createPlayer = (playerId) => {
             const player = gameState.players[playerId];
+
             graphics.players[playerId] = new PIXI.Graphics();
+
+            // create player
             graphics.players[playerId].beginFill(0xFF0000);
             graphics.players[playerId].drawRect(player.x, player.y, player.width, player.height);
+            
+            // create hp bar
+            drawHpBar(graphics.players[playerId], player);
+
+            // graphics.players[playerId].beginFill(0x00FF00);
+            // graphics.players[playerId].drawRect(player.x, player.y, player.width, player.height / 10);
             application.stage.addChild(graphics.players[playerId]);
         }
 
         const removePlayer = (playerId) => {
-            console.log(`removing player ${playerId}`)
             graphics.players[playerId].clear();
             application.stage.removeChild(graphics.players[playerId]);
         }
 
         const redrawPlayer = (playerId) => {
+            const player = gameState.players[playerId];
+
             graphics.players[playerId].clear();
+
+            // redraw player
             graphics.players[playerId].beginFill(0xFF0000);
-            graphics.players[playerId].drawRect(gameState.players[playerId].x, gameState.players[playerId].y, gameState.players[playerId].width, gameState.players[playerId].height);  
+            graphics.players[playerId].drawRect(player.x, player.y, player.width, player.height); 
+
+            // redraw hp bar
+            drawHpBar(graphics.players[playerId], player);
+            // graphics.players[playerId].beginFill(0x00FF00);
+            // graphics.players[playerId].drawRect(player.x, player.y - (player.height / 5), player.width, player.height / 10);
+        }
+
+        const drawHpBar = (graphics, unit) => {
+            graphics.beginFill(0x00FF00);
+            const percent = unit.health / unit.maxHealth;
+            if (percent < 0) percent = 0;
+            graphics.drawRect(unit.x, unit.y - (unit.height / 5), unit.width * percent, unit.height / 10);
         }
 
         const redrawProjectile = (projectileId) => {
@@ -96,6 +118,7 @@
             graphics.projectiles[projectileId].clear();
             graphics.projectiles[projectileId].beginFill(0xFF0000);
             graphics.projectiles[projectileId].drawRect(gameState.projectiles[projectileId].x, gameState.projectiles[projectileId].y, gameState.projectiles[projectileId].width, gameState.projectiles[projectileId].height);  
+            
         }
 
         const redrawAll = () => {
@@ -119,18 +142,15 @@
             const event = JSON.parse(ev.data);
             switch(event.type){
                 case("CONNECTED"):                    
-                    pasteDom(`user connected ${event.playerId}`);
                     playerId = event.playerId;
                     gameState = event.gameState;
                     loadGame(event.gameState);
                     break;
                 case("OPPONENT_CONNECTED"):
-                    pasteDom(`opponent connected ${event.playerId}`);
                     gameState = event.gameState;
                     createPlayer(event.playerId);
                     break;
                 case("OPPONENT_DISCONNECTED"):
-                    pasteDom(`opponent disconnected ${event.playerId}`);
                     gameState = event.gameState;
                     removePlayer(event.playerId);
                     break;
@@ -145,6 +165,13 @@
                     gameState = event.gameState;
                     destroyProjectile(event.projectileId);
                     break;
+                case("PLAYER_KILLED"):
+                    gameState = event.gameState;
+                    removePlayer(event.playerId);
+                    if (event.playerId == playerId){
+                        window.alert("sorry u were killed. cntrl + r to play again");
+                    }
+                    break;
                 default:
                     throw(`unhandled event ${event.type}`);
             }
@@ -152,8 +179,8 @@
 
         // Game stuff
         const application = new PIXI.Application({
-            width: 500,
-            height: 500,
+            width: appWidth,
+            height: appHeight,
         });
 
         document.addEventListener("keydown", (ev) => {

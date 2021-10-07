@@ -6,35 +6,40 @@ const updatePlayerPosition = (gameState, playerId, frames) => {
     const player = gameState.players[playerId];
 
     // Apply gravity
-    // if (frames % 5 === 0){
-        if (player.yVelocity < 32){
-            player.yVelocity += 1;
-        }
-    // }
-    // gravity(player);
+    if (player.yVelocity < 16){
+        player.yVelocity += 1;
+    }
+        
     const x = player.x + player.xVelocity;
     const y = player.y + player.yVelocity;
-    const collidedXEntity = collidedX(gameState, playerId, x);
-    const collidedYEntity = collidedY(gameState, playerId, y);
+    const collidedXEntities = collidedXPlayer(gameState, playerId, x);
+    const collidedYEntities = collidedYPlayer(gameState, playerId, y);
 
-    if (!collidedXEntity){
+    if (collidedXEntities.length == 0){
         player.x = x;
     } else {
-        collideX(player, collidedXEntity);
+        collidedXEntities.forEach((entity) => {
+            collideX(player, entity);
+        })
+        
     }
 
-    if (!collidedYEntity){
+    if (collidedYEntities.length == 0){
         gameState.players[playerId].y = y;
     } else {
-        collideY(player, collidedYEntity);
-
+        collidedYEntities.forEach((entity) => {
+            collideY(player, entity);
+        })
+        // collideY(player, collidedYEntity);
     }
 }
 
 const updateProjectilePosition = (gameState, projectileId, frames) => {
     const projectile = gameState.projectiles[projectileId];
+
+    // Apply gravity
     if (frames % 3 === 0){
-        if (projectile.yVelocity < 32){
+        if (projectile.yVelocity < 16){
             projectile.yVelocity += 1;
         }
     }
@@ -47,26 +52,29 @@ const updateProjectilePosition = (gameState, projectileId, frames) => {
         projectile.x = x;
     } else {
         collideX(projectile, collidedXEntity);
+        projectile.xVelocity = 0;
     }
 
     if (!collidedYEntity){
         projectile.y = y;
     } else {
-        collideY(projectile, collidedYEntity)
+        collideY(projectile, collidedYEntity);
+        projectile.yVelocity = 0;
+
     }
 }
-
-
-
-
-
 
 const collidedYProjectile = (gameState, projectileId, y) => {
     let collider = null;
     const projectile = gameState.projectiles[projectileId];
-    collider = collidedPlatformY(gameState, projectile, y)
+    collider = collidedPlatformY(gameState, projectile, y);
 
-    return collider
+    let playerCollision = collidedPlayerY(gameState, projectile, y)
+    if (playerCollision && playerCollision.id != projectile.playerId) {
+        projectile.lifeTime = 0; // flag projectile for deletion
+        playerCollision.health -= 5;
+    }
+    return collider;
 }
 
 const collidedXProjectile = (gameState, projectileId, x) => {
@@ -74,28 +82,39 @@ const collidedXProjectile = (gameState, projectileId, x) => {
     const projectile = gameState.projectiles[projectileId];
     collider = collidedPlatformX(gameState, projectile, x)
 
+    let playerCollision = collidedPlayerX(gameState, projectile, x)
+    if (playerCollision && playerCollision.id != projectile.playerId) {
+        projectile.lifeTime = 0; // flag projectile for deletion
+        playerCollision.health -= 5;
+    }
+
     return collider;
-
 }
 
-const collidedY = (gameState, playerId, y) => {
-    let collider = null;
+const collidedYPlayer = (gameState, playerId, y) => {
+    const colliders = [];
     const player = gameState.players[playerId];
 
-    collider = collidedPlatformY(gameState, player, y)
-    // collider = collidedPlayerY(gameState, player, y);
+    const collidedPlatform = collidedPlatformY(gameState, player, y);
+    const collidedPlayer = collidedPlayerY(gameState, player, y);
 
-    return collider
+    if (collidedPlatform) colliders.push(collidedPlatform);
+    if (collidedPlayer) colliders.push(collidedPlayer);
+    
+    return colliders;
 }
 
-const collidedX = (gameState, playerId, x) => {
-    let collider = null;
+const collidedXPlayer = (gameState, playerId, x) => {
+    const colliders = [];
     const player = gameState.players[playerId];
 
-    collider = collidedPlatformX(gameState, player, x)
-    // collider = collidedPlayerX(gameState, player, x);
+    const collidedPlatform = collidedPlatformX(gameState, player, x);
+    const collidedPlayer = collidedPlayerX(gameState, player, x);
 
-    return collider
+    if (collidedPlatform) colliders.push(collidedPlatform);
+    if (collidedPlayer) colliders.push(collidedPlayer);
+
+    return colliders;
 }
 
 

@@ -35,13 +35,176 @@ gameState.platforms[uuid.v4()] = {
     x: 100,
     y: 400,
     width: 300,
-    height: 50
+    height: 25
 }
+
 gameState.platforms[uuid.v4()] = {
     x: 250,
     y: 350,
-    width: 50,
+    width: 25,
     height: 50,
+}
+
+gameState.platforms[uuid.v4()] = {
+    x: 300,
+    y: 250,
+    width: 100,
+    height: 25,
+}
+
+gameState.platforms[uuid.v4()] = {
+    x: 425,
+    y: 650,
+    width: 400,
+    height: 25,
+}
+
+
+gameState.platforms[uuid.v4()] = {
+    x: 450,
+    y: 560,
+    width: 300,
+    height: 25,
+}
+
+gameState.platforms[uuid.v4()] = {
+    x: 450,
+    y: 450,
+    width: 225,
+    height: 25,
+}
+
+gameState.platforms[uuid.v4()] = {
+    x: 450,
+    y: 450,
+    width: 25,
+    height: 125,
+}
+
+gameState.platforms[uuid.v4()] = {
+    x: 725,
+    y: 450,
+    width: 25,
+    height: 125,
+}
+
+gameState.platforms[uuid.v4()] = {
+    x: 50,
+    y: 200,
+    width: 25,
+    height: 150
+}
+
+
+// right box
+gameState.platforms[uuid.v4()] = {
+    x: 450,
+    y: 560,
+    width: 300,
+    height: 25,
+}
+
+gameState.platforms[uuid.v4()] = {
+    x: 450,
+    y: 450,
+    width: 225,
+    height: 25,
+}
+
+gameState.platforms[uuid.v4()] = {
+    x: 450,
+    y: 450,
+    width: 25,
+    height: 125,
+}
+
+gameState.platforms[uuid.v4()] = {
+    x: 725,
+    y: 450,
+    width: 25,
+    height: 125,
+}
+
+gameState.platforms[uuid.v4()] = {
+    x: 500,
+    y: 350,
+    width: 25,
+    height: 100,
+}
+
+
+
+
+// upper box
+gameState.platforms[uuid.v4()] = {
+    x: 0,
+    y: 0,
+    width: 300,
+    height: 25,
+}
+
+
+gameState.platforms[uuid.v4()] = {
+    x: 0,
+    y: 100,
+    width: 225,
+    height: 25,
+}
+
+gameState.platforms[uuid.v4()] = {
+    x: 0,
+    y: 0,
+    width: 25,
+    height: 125,
+}
+
+gameState.platforms[uuid.v4()] = {
+    x: 275,
+    y: 0,
+    width: 25,
+    height: 125,
+}
+
+
+// upper platform
+gameState.platforms[uuid.v4()] = {
+    x: 400,
+    y: 50,
+    width: 250,
+    height: 25,
+}
+
+gameState.platforms[uuid.v4()] = {
+    x: 450,
+    y: 175,
+    width: 250,
+    height: 25,
+}
+
+gameState.platforms[uuid.v4()] = {
+    x: 100,
+    y: 475,
+    width: 25,
+    height: 75,
+}
+
+
+
+
+
+gameState.platforms[uuid.v4()] = {
+    x: 0,
+    y: 700,
+    width: 350,
+    height: 25,
+}
+
+
+gameState.platforms[uuid.v4()] = {
+    x: 0,
+    y: 550,
+    width: 200,
+    height: 25,
 }
 
 const broadcastUpdate = () => {
@@ -85,6 +248,17 @@ const broadCastProjectileDestroy = (projectileId) => {
     }); 
 }
 
+const broadcastPlayerDeath = (playerId) => {
+    delete gameState.players[playerId];
+    Object.keys(connections).forEach((socketId) => {
+        connections[socketId].send(JSON.stringify({
+            type: "PLAYER_KILLED",
+            playerId,
+            gameState,
+        }));
+    }); 
+}
+
 
 const createPlatform = (x, y, width, height) => {
     const id = uuid.v4();
@@ -116,18 +290,24 @@ const createProjectile = (playerId, xVelocity, yVelocity) => {
     broadCastProjectileFire(id);
 }
 
-webSocket.on("connection", (socket, req) => {
-    const playerId = uuid.v4();
-    connections[playerId] = socket;
-    gameState.players[playerId] = {
+const createPlayer = (playerId) => {
+    return {
         x:  Math.floor(Math.random() * 500),
         y: Math.floor(Math.random() * 500),
         xVelocity: 0,
         yVelocity: 0,
         width: 20, // default width and height
         height: 30,
+        health: 100, // default health
+        maxHealth: 100,
         id: playerId,
     };
+}
+
+webSocket.on("connection", (socket, req) => {
+    const playerId = uuid.v4();
+    connections[playerId] = socket;
+    gameState.players[playerId] = createPlayer(playerId);
 
     // Give the connected player their id
     socket.send(JSON.stringify({
@@ -162,6 +342,7 @@ webSocket.on("connection", (socket, req) => {
     });
 
     socket.on("message", (data) => {
+        if (!gameState.players[playerId]) return;
         const message = JSON.parse(data);
         switch(message.type){
             case("ACTION"):
@@ -232,6 +413,14 @@ const gameLoop = () => {
 
     Object.keys(gameState.players).forEach((playerId) => {
         // game.gravity(gameState, playerId);
+        const player = gameState.players[playerId];
+        if (player.health <= 0){
+            broadcastPlayerDeath(playerId);
+            // connections[playerId].close();
+            // delete connections[playerId];
+
+            return;
+        }
         game.updatePlayerPosition(gameState, playerId, frames)
     });
 
