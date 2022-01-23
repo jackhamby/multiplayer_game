@@ -343,7 +343,13 @@ webSocket.on("connection", (socket, req) => {
 
     socket.on("message", (data) => {
         if (!gameState.players[playerId]) return;
-        const message = JSON.parse(data);
+        let message;
+        try {
+            message = JSON.parse(data);
+        }
+        catch {
+            return;
+        }
         switch(message.type){
             case("ACTION"):
                 switch(message.action){
