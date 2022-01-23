@@ -310,13 +310,8 @@
 
         application.ticker.add((delta) => {
             frames += 1;
-            // console.log(gameState);
             if (gameState){
                 redrawAll();
-                // Object.keys(gameState.players).forEach((playerId) => {
-                //     redraw(playerId, gameState.players[playerId].x, gameState.players[playerId].y);
-                // });
-       
             }
         })
 

@@ -327,7 +327,6 @@ webSocket.on("connection", (socket, req) => {
     });
 
     socket.on('close', (code, playerId) => {
-        console.log(`closed ${code} ${playerId}`);
         let disconnectedPlayerId;
         Object.keys(connections).forEach((playerId) => {
             if (connections[playerId] === socket){
@@ -381,22 +380,18 @@ webSocket.on("connection", (socket, req) => {
                         gameState.players[playerId].yVelocity =  -16;
                         break;
                     case("fireLeft"):
-                        console.log('recieved fire left')
                         createProjectile(playerId, -16, 0)
                         // Create projectile
                         break;
                     case("fireRight"):
-                        console.log('recieved fire right')
                         createProjectile(playerId, 16, 0)
                         // Create projectile
                         break;
                     case("fireUp"):
-                        console.log('recieved fire up')
                         createProjectile(playerId, 0, -16)
                         // Create projectile
                         break;
                     case("fireDown"):
-                        console.log('recieved fire down')
                         createProjectile(playerId, 0, 16)
                         // Create projectile
                         break;
